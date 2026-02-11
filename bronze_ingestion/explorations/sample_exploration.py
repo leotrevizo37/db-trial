@@ -17,3 +17,7 @@ sys.path.append("/Workspace/Users/leoecosat@hotmail.com/bronze_ingestion")
 # !!! Before performing any data analysis, make sure to run the pipeline to materialize the sample datasets. The tables referenced in this notebook depend on that step.
 
 display(spark.sql("SELECT * FROM trial.bronze.reads LIMIT 100"))
+
+# COMMAND ----------
+
+display(dbutils.fs.ls("abfss://bronze@dbdemodatalake.dfs.core.windows.net/reads/")[:10])
