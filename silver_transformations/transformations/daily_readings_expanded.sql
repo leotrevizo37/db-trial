@@ -1,13 +1,60 @@
-
 CREATE OR REPLACE MATERIALIZED VIEW daily_readings_expanded AS
 SELECT 
-  t.name AS tenant,
-  l.name AS location,
-  dt.name AS device,
+  r.reading_date,
   r.min_value,
   r.max_value,
   r.avg_value,
-  r.reading_date
+  r.SensorId,
+  s.SensorTyId,
+  s.DeviceId,
+  s.ModelId,
+  s.SensorHubId,
+  s.Name as SensorName,
+  s.Active as SensorActive,
+  s.PhysicalIdentifier,
+  s.CreatedAt as SensorCreatedAt,
+  s.ModifiedAt as SensorModifiedAt,
+  s.Topic,
+  s.FieldName,
+  s.PerEvent,
+  s.Conversion,
+  s.ExtraValue1,
+  s.ExtraValue2,
+  s.ExtraValue3,
+  s.ExtraValue4,
+  d.DeviceTyId,
+  d.SubLocationId,
+  d.Name as DeviceName,
+  d.Active as DeviceActive,
+  d.ModelId as DeviceModelId,
+  d.CreatedAt as DeviceCreatedAt,
+  d.ModifiedAt as DeviceModifiedAt,
+  d.Image,
+  dt.Name as DeviceTypeName,
+  dt.Active as DeviceTypeActive,
+  dt.CreatedAt as DeviceTypeCreatedAt,
+  dt.ModifiedAt as DeviceTypeModifiedAt,
+  sl.LocationId,
+  sl.SubLocationParentId,
+  sl.SubLocationTyId,
+  sl.Name as SubLocationName,
+  sl.Active as SubLocationActive,
+  sl.CreatedAt as SubLocationCreatedAt,
+  sl.ModifiedAt as SubLocationModifiedAt,
+  sl.Latitude,
+  sl.Longitude,
+  sl.Point,
+  l.CityId,
+  l.Name as LocationName,
+  l.BusinessTyId,
+  l.RegionId,
+  l.IdentifierCode,
+  l.Active as LocationActive,
+  l.CreatedAt as LocationCreatedAt,
+  l.ModifiedAt as LocationModifiedAt,
+  l.LocationTyId,
+  l.TenantId,
+  t.Name as TenantName
 FROM daily_readings r
 JOIN trial.bronze.sensors s
   ON upper(r.SensorId) = upper(s.SensorId)
@@ -22,5 +69,4 @@ JOIN trial.bronze.locations l
 JOIN trial.bronze.tenants t
   ON upper(l.TenantId) = upper(t.TenantId)
 WHERE CAST(r.reading_date AS TIMESTAMP) >= (current_timestamp() - INTERVAL 2 MONTH)
-GROUP BY r.reading_date, l.Name, t.Name, dt.Name, r.min_value, r.max_value, r.avg_value
 ORDER BY r.reading_date;
