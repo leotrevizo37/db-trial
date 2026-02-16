@@ -1,0 +1,593 @@
+{
+  "datasets": [
+    {
+      "name": "3137af74",
+      "displayName": "v_hourly_device_health",
+      "queryLines": [
+        "SELECT * FROM trial.gold.v_hourly_device_health"
+      ]
+    },
+    {
+      "name": "cbd28c21",
+      "displayName": "Worst availability - last 24h",
+      "queryLines": [
+        "SELECT\r\n",
+        "    device_type,\r\n",
+        "    device,\r\n",
+        "    location,\r\n",
+        "    tenant,\r\n",
+        "    value_kind,\r\n",
+        "    avg(availability_pct) AS avg_availability_pct,\r\n",
+        "    sum(gap_minutes) AS total_gap_minutes\r\n",
+        "FROM gold.v_hourly_device_health\r\n",
+        "WHERE reading_hour >= date_trunc('hour', current_timestamp() - INTERVAL 21 DAYS)\r\n",
+        "    AND upper(value_kind) NOT IN (\"ENCENDIDO\", \"ON/OFF\", \"MODO\", \"switch\")\r\n",
+        "    AND (availability_pct <= 90)\r\n",
+        "GROUP BY device_type, device, location, tenant, value_kind\r\n",
+        "ORDER BY avg_availability_pct ASC\r\n",
+        "LIMIT 20;\r\n"
+      ]
+    },
+    {
+      "name": "abb56c61",
+      "displayName": "Irregular operation - sensors",
+      "queryLines": [
+        "WITH base AS (\r\n",
+        "    SELECT *\r\n",
+        "    FROM gold.v_hourly_device_health\r\n",
+        "    WHERE reading_hour >= date_trunc('hour', current_timestamp() - INTERVAL 18 DAY)\r\n",
+        "),\r\n",
+        "calc AS (\r\n",
+        "    SELECT\r\n",
+        "        base.*,\r\n",
+        "        (max_value - min_value) AS range_value,\r\n",
+        "        stddev_pop(max_value - min_value) OVER () AS sd_range\r\n",
+        "    FROM base\r\n",
+        ")\r\n",
+        "SELECT\r\n",
+        "    reading_hour,\r\n",
+        "    device_type,\r\n",
+        "    device,\r\n",
+        "    sensor_type,\r\n",
+        "    avg_value,\r\n",
+        "    value_kind,\r\n",
+        "    stddev_value,\r\n",
+        "    location,\r\n",
+        "    availability_pct\r\n",
+        "FROM calc\r\n",
+        "WHERE ( \r\n",
+        "        :device_type IS NULL\r\n",
+        "        OR size(:device_type) = 0\r\n",
+        "        OR exists(:device_type, x -> upper(x) = upper(device_type))\r\n",
+        "    )\r\n",
+        "    AND (\r\n",
+        "        availability_pct < 90\r\n",
+        "        OR avg_value IS NULL\r\n",
+        "        OR stddev_value > 3 * sd_range\r\n",
+        "    )\r\n",
+        "    AND  ( \r\n",
+        "        :sensor_type IS NULL\r\n",
+        "        OR size(:sensor_type) = 0\r\n",
+        "        OR exists(:sensor_type, x -> upper(x) = upper(sensor_type))\r\n",
+        "    )\r\n",
+        "    AND  ( \r\n",
+        "        :location IS NULL\r\n",
+        "        OR size(:location) = 0\r\n",
+        "        OR exists(:location, x -> upper(x) = upper(location))\r\n",
+        "    )\r\n",
+        "ORDER BY reading_hour DESC;\r\n"
+      ],
+      "parameters": [
+        {
+          "displayName": "sensor_type",
+          "keyword": "sensor_type",
+          "dataType": "STRING",
+          "complexType": "MULTI",
+          "defaultSelection": {
+            "operator": {
+              "operator": "AND"
+            }
+          }
+        },
+        {
+          "displayName": "device_type",
+          "keyword": "device_type",
+          "dataType": "STRING",
+          "complexType": "MULTI",
+          "defaultSelection": {
+            "operator": {
+              "operator": "AND"
+            }
+          }
+        },
+        {
+          "displayName": "location",
+          "keyword": "location",
+          "dataType": "STRING",
+          "complexType": "MULTI",
+          "defaultSelection": {
+            "operator": {
+              "operator": "AND"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "0723ed85",
+      "displayName": "Device trends - reads",
+      "queryLines": [
+        "SELECT\r\n",
+        "    reading_hour,\r\n",
+        "    sensor_type,\r\n",
+        "    avg(avg_value) AS avg_value,\r\n",
+        "    avg(availability_pct) AS availability_pct\r\n",
+        "FROM gold.v_hourly_device_health\r\n",
+        "WHERE upper(device_type) = upper(:device_type)\r\n",
+        "    AND reading_hour >= date_trunc('hour', current_timestamp() - INTERVAL 48 HOURS)\r\n",
+        "GROUP BY reading_hour, sensor_type\r\n",
+        "ORDER BY reading_hour;\r\n"
+      ],
+      "parameters": [
+        {
+          "displayName": "device_type",
+          "keyword": "device_type",
+          "dataType": "STRING",
+          "defaultSelection": {}
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "b336799d",
+      "displayName": "Data loss",
+      "layout": [
+        {
+          "widget": {
+            "name": "porcentaje-recepcion-datos-sucursal",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "abb56c61",
+                  "fields": [
+                    {
+                      "name": "location",
+                      "expression": "`location`"
+                    },
+                    {
+                      "name": "avg(availability_pct)",
+                      "expression": "AVG(`availability_pct`)"
+                    }
+                  ],
+                  "parameterValues": [
+                    {
+                      "keyword": "device_type",
+                      "selection": {}
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Porcentaje de recepción de datos - por sucursal"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "location",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(availability_pct)",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 15,
+            "width": 12,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "device-type",
+            "queries": [
+              {
+                "name": "dashboards/01f108f55108107db0ed52d2c120a0a0/datasets/01f108f7ad3713a68c8ad5019fae715b_device_type",
+                "query": {
+                  "datasetName": "abb56c61",
+                  "fields": [
+                    {
+                      "name": "device_type",
+                      "expression": "`device_type`"
+                    },
+                    {
+                      "name": "device_type_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Device type"
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "device_type",
+                    "queryName": "dashboards/01f108f55108107db0ed52d2c120a0a0/datasets/01f108f7ad3713a68c8ad5019fae715b_device_type"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 1,
+            "y": 1,
+            "width": 9,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "porcentaje-recepcion-datos-equipos",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "abb56c61",
+                  "fields": [
+                    {
+                      "name": "device_type",
+                      "expression": "`device_type`"
+                    },
+                    {
+                      "name": "avg(availability_pct)",
+                      "expression": "AVG(`availability_pct`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Porcentaje recepción de datos - por equipos"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "device_type",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(availability_pct)",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "sensor-1",
+            "queries": [
+              {
+                "name": "dashboards/01f108f55108107db0ed52d2c120a0a0/datasets/01f108f7ad3713a68c8ad5019fae715b_sensor_type",
+                "query": {
+                  "datasetName": "abb56c61",
+                  "fields": [
+                    {
+                      "name": "sensor_type",
+                      "expression": "`sensor_type`"
+                    },
+                    {
+                      "name": "sensor_type_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Sensor"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "sensor_type",
+                    "queryName": "dashboards/01f108f55108107db0ed52d2c120a0a0/datasets/01f108f7ad3713a68c8ad5019fae715b_sensor_type"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 1,
+            "y": 2,
+            "width": 9,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "location",
+            "queries": [
+              {
+                "name": "dashboards/01f108f55108107db0ed52d2c120a0a0/datasets/01f108f7ad3713a68c8ad5019fae715b_location",
+                "query": {
+                  "datasetName": "abb56c61",
+                  "fields": [
+                    {
+                      "name": "location",
+                      "expression": "`location`"
+                    },
+                    {
+                      "name": "location_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Location"
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "location",
+                    "queryName": "dashboards/01f108f55108107db0ed52d2c120a0a0/datasets/01f108f7ad3713a68c8ad5019fae715b_location"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 1,
+            "y": 0,
+            "width": 9,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "porcentaje-recepcion-datos-sensor",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "abb56c61",
+                  "fields": [
+                    {
+                      "name": "sensor_type",
+                      "expression": "`sensor_type`"
+                    },
+                    {
+                      "name": "avg(availability_pct)",
+                      "expression": "AVG(`availability_pct`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Porcentaje recepcion de datos - por sensor"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "sensor_type",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(availability_pct)",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "cd5ca5f0",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "abb56c61",
+                  "fields": [
+                    {
+                      "name": "reading_hour",
+                      "expression": "`reading_hour`"
+                    },
+                    {
+                      "name": "avg(availability_pct)",
+                      "expression": "AVG(`availability_pct`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "reading_hour",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(availability_pct)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 23,
+            "width": 12,
+            "height": 8
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "a2bcfd75",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "588e6513",
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {},
+              "frame": {
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
