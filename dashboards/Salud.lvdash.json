@@ -4,7 +4,7 @@
       "name": "3137af74",
       "displayName": "v_hourly_device_health",
       "queryLines": [
-        "SELECT * FROM trial.gold.v_hourly_device_health"
+        "SELECT * FROM trial.secure.v_hourly_device_health"
       ]
     },
     {
@@ -19,7 +19,7 @@
         "    value_kind,\r\n",
         "    avg(availability_pct) AS avg_availability_pct,\r\n",
         "    sum(gap_minutes) AS total_gap_minutes\r\n",
-        "FROM gold.v_hourly_device_health\r\n",
+        "FROM secure.v_hourly_device_health\r\n",
         "WHERE reading_hour >= date_trunc('hour', current_timestamp() - INTERVAL 21 DAYS)\r\n",
         "    AND upper(value_kind) NOT IN (\"ENCENDIDO\", \"ON/OFF\", \"MODO\", \"switch\")\r\n",
         "    AND (availability_pct <= 90)\r\n",
@@ -34,7 +34,7 @@
       "queryLines": [
         "WITH base AS (\r\n",
         "    SELECT *\r\n",
-        "    FROM gold.v_hourly_device_health\r\n",
+        "    FROM secure.v_hourly_device_health\r\n",
         "    WHERE reading_hour >= date_trunc('hour', current_timestamp() - INTERVAL 18 DAY)\r\n",
         "),\r\n",
         "calc AS (\r\n",
@@ -122,8 +122,12 @@
         "    sensor_type,\r\n",
         "    avg(avg_value) AS avg_value,\r\n",
         "    avg(availability_pct) AS availability_pct\r\n",
-        "FROM gold.v_hourly_device_health\r\n",
-        "WHERE upper(device_type) = upper(:device_type)\r\n",
+        "FROM secure.v_hourly_device_health\r\n",
+        "WHERE ( \r\n",
+        "        :device_type IS NULL\r\n",
+        "        OR size(:device_type) = 0\r\n",
+        "        OR exists(:device_type, x -> upper(x) = upper(device_type))\r\n",
+        "    )\r\n",
         "    AND reading_hour >= date_trunc('hour', current_timestamp() - INTERVAL 48 HOURS)\r\n",
         "GROUP BY reading_hour, sensor_type\r\n",
         "ORDER BY reading_hour;\r\n"
@@ -133,7 +137,12 @@
           "displayName": "device_type",
           "keyword": "device_type",
           "dataType": "STRING",
-          "defaultSelection": {}
+          "complexType": "MULTI",
+          "defaultSelection": {
+            "operator": {
+              "operator": "AND"
+            }
+          }
         }
       ]
     }
@@ -237,6 +246,12 @@
                     "type": "quantitative"
                   }
                 },
+                "color": {
+                  "fieldName": "location",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
                 "label": {
                   "show": false
                 }
@@ -245,9 +260,9 @@
           },
           "position": {
             "x": 0,
-            "y": 15,
-            "width": 12,
-            "height": 8
+            "y": 7,
+            "width": 6,
+            "height": 5
           }
         },
         {
@@ -290,9 +305,9 @@
             }
           },
           "position": {
-            "x": 1,
+            "x": 0,
             "y": 1,
-            "width": 9,
+            "width": 6,
             "height": 1
           }
         },
@@ -348,10 +363,10 @@
             }
           },
           "position": {
-            "x": 0,
-            "y": 9,
-            "width": 12,
-            "height": 6
+            "x": 6,
+            "y": 2,
+            "width": 6,
+            "height": 5
           }
         },
         {
@@ -394,10 +409,10 @@
             }
           },
           "position": {
-            "x": 1,
-            "y": 2,
-            "width": 9,
-            "height": 1
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 2
           }
         },
         {
@@ -440,9 +455,9 @@
             }
           },
           "position": {
-            "x": 1,
+            "x": 0,
             "y": 0,
-            "width": 9,
+            "width": 6,
             "height": 1
           }
         },
@@ -499,9 +514,9 @@
           },
           "position": {
             "x": 0,
-            "y": 3,
-            "width": 12,
-            "height": 6
+            "y": 2,
+            "width": 6,
+            "height": 5
           }
         },
         {
@@ -513,6 +528,10 @@
                 "query": {
                   "datasetName": "abb56c61",
                   "fields": [
+                    {
+                      "name": "device",
+                      "expression": "`device`"
+                    },
                     {
                       "name": "reading_hour",
                       "expression": "`reading_hour`"
@@ -541,15 +560,21 @@
                   "scale": {
                     "type": "quantitative"
                   }
+                },
+                "color": {
+                  "fieldName": "device",
+                  "scale": {
+                    "type": "categorical"
+                  }
                 }
               }
             }
           },
           "position": {
-            "x": 0,
-            "y": 23,
-            "width": 12,
-            "height": 8
+            "x": 6,
+            "y": 7,
+            "width": 6,
+            "height": 5
           }
         }
       ],
@@ -585,8 +610,14 @@
     }
   ],
   "uiSettings": {
+    "locale": "es-MX",
     "theme": {
       "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "genieSpace": {
+      "isEnabled": true,
+      "overrideId": "01f108ff40091a0094c70e915dd37a72",
+      "enablementMode": "ENABLED"
     },
     "applyModeEnabled": false
   }
