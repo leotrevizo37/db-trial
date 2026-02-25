@@ -5,18 +5,17 @@ SELECT
     a.value_kind,
     t.Name AS tenant,
     t.tenantId,
-    l.Name AS location,
-    dt.Name AS device_type,
-    d.Name AS device,
-    st.Name AS sensor_type,
+    l.LocationId,
+    dt.DeviceTyId,
+    d.DeviceId,
+    st.SensorTyId,
     h.min_value,
     h.max_value,
     h.avg_value,
     h.stddev_value,
     a.availability_pct,
     a.gap_minutes,
-    s.SensorId,
-    d.DeviceId
+    s.SensorId
 FROM hourly_reads h
 JOIN trial.bronze.sensors s
     ON upper(h.SensorId) = upper(s.SensorId)
