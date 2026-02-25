@@ -60,11 +60,6 @@
         "        OR size(:device_type) = 0\r\n",
         "        OR exists(:device_type, x -> upper(x) = upper(device_type))\r\n",
         "    )\r\n",
-        "    AND (\r\n",
-        "        availability_pct < 90\r\n",
-        "        OR avg_value IS NULL\r\n",
-        "        OR stddev_value > 3 * sd_range\r\n",
-        "    )\r\n",
         "    AND  ( \r\n",
         "        :sensor_type IS NULL\r\n",
         "        OR size(:sensor_type) = 0\r\n",
@@ -606,6 +601,289 @@
         }
       ],
       "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "570e79d7",
+      "displayName": "Data loss 1",
+      "layout": [
+        {
+          "widget": {
+            "name": "5547d567",
+            "queries": [
+              {
+                "name": "dashboards/01f108f55108107db0ed52d2c120a0a0/datasets/01f108f7ad3713a68c8ad5019fae715b_device_type",
+                "query": {
+                  "datasetName": "abb56c61",
+                  "fields": [
+                    {
+                      "name": "device_type",
+                      "expression": "`device_type`"
+                    },
+                    {
+                      "name": "device_type_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Device type"
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "device_type",
+                    "queryName": "dashboards/01f108f55108107db0ed52d2c120a0a0/datasets/01f108f7ad3713a68c8ad5019fae715b_device_type"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "7a4f7cae",
+            "queries": [
+              {
+                "name": "dashboards/01f108f55108107db0ed52d2c120a0a0/datasets/01f108f7ad3713a68c8ad5019fae715b_sensor_type",
+                "query": {
+                  "datasetName": "abb56c61",
+                  "fields": [
+                    {
+                      "name": "sensor_type",
+                      "expression": "`sensor_type`"
+                    },
+                    {
+                      "name": "sensor_type_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Sensor"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "sensor_type",
+                    "queryName": "dashboards/01f108f55108107db0ed52d2c120a0a0/datasets/01f108f7ad3713a68c8ad5019fae715b_sensor_type"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "194d6568",
+            "queries": [
+              {
+                "name": "dashboards/01f108f55108107db0ed52d2c120a0a0/datasets/01f108f7ad3713a68c8ad5019fae715b_location",
+                "query": {
+                  "datasetName": "abb56c61",
+                  "fields": [
+                    {
+                      "name": "location",
+                      "expression": "`location`"
+                    },
+                    {
+                      "name": "location_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Location"
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "location",
+                    "queryName": "dashboards/01f108f55108107db0ed52d2c120a0a0/datasets/01f108f7ad3713a68c8ad5019fae715b_location"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "7922d279",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0723ed85",
+                  "fields": [
+                    {
+                      "name": "reading_hour",
+                      "expression": "`reading_hour`"
+                    },
+                    {
+                      "name": "avg_value",
+                      "expression": "`avg_value`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "mark": {
+                "colors": [
+                  "#458920",
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "reading_hour",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg_value",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 2,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "11cf06bf",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0723ed85",
+                  "fields": [
+                    {
+                      "name": "monthly(reading_hour)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `reading_hour`)"
+                    },
+                    {
+                      "name": "availability_pct",
+                      "expression": "`availability_pct`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "heatmap",
+              "encodings": {
+                "x": {
+                  "fieldName": "monthly(reading_hour)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "availability_pct",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
       "layoutVersion": "GRID_V1"
     }
   ],
